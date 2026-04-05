@@ -1,0 +1,21 @@
+# Build output — rebuilt inside Docker
+target/
+
+# IDE and OS files
+.idea/
+.DS_Store
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# Local dev / docs
+client_test.html
+README.md
+*.md
+
+# Maven wrapper (not needed inside image)
+.mvn/
+mvnw
+mvnw.cmd
