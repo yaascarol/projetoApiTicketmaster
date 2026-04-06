@@ -1,26 +1,29 @@
-## Stage 1: Build
-FROM maven:3.9-eclipse-temurin-21 AS build
+# ---------- Build stage ----------
+FROM maven:3.9-eclipse-temurin-25 AS build
+WORKDIR /app
 
-WORKDIR /build
-
+# Copy build descriptors first for better cache
 COPY pom.xml .
-RUN mvn dependency:go-offline -q
+COPY .mvn .mvn
+COPY mvnw .
+RUN chmod +x ./mvnw
 
-COPY src ./src
-RUN mvn package -DskipTests -q
+# Download deps (optional but speeds up rebuilds)
+RUN ./mvnw -q -DskipTests dependency:go-offline
 
-## Stage 2: Run
-FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24
+# Copy source and build
+COPY src src
+RUN ./mvnw -DskipTests clean package
 
-ENV LANGUAGE='en_US:en'
 
-COPY --chown=185 --from=build /build/target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 --from=build /build/target/quarkus-app/*.jar /deployments/
-COPY --chown=185 --from=build /build/target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 --from=build /build/target/quarkus-app/quarkus/ /deployments/quarkus/
+# ---------- Runtime stage ----------
+FROM eclipse-temurin:25-jre
+WORKDIR /app
 
+COPY --from=build /app/target/*.jar app.jar
+
+# Render sets PORT at runtime
+ENV PORT=8080
 EXPOSE 8080
-USER 185
 
-# Render injects $PORT at runtime; fall back to 8080 locally
-ENTRYPOINT ["sh", "-c", "exec java -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.port=${PORT:-8080} -Djava.util.logging.manager=org.jboss.logmanager.LogManager -jar /deployments/quarkus-run.jar"]
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=$PORT -jar app.jar"]
