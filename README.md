@@ -13,7 +13,7 @@ O sistema permite gerenciar o ciclo de vida de uma venda de ingressos.
 * **Venda**: Abertura de pedidos, vinculando o usuário aos itens.
 * **Segurança de Processamento**: Implementação de campo para chave que evita cobrança duplicada.
 
-### Tecnologias utilizadas
+### Tecnologias utilizadas:
 
 * **Java 21**
 * **Spring Boot 3.4**
@@ -23,14 +23,14 @@ O sistema permite gerenciar o ciclo de vida de uma venda de ingressos.
 * **Docker**
 * **Render**
 
-### Arquitetura do código
+### Arquitetura do código:
 
 * **Controller**: Exposição dos endpoints REST.
 * **Service**: Lógica e integração com a Ticketmaster.
 * **Repository**: Interface de comunicação com o banco de dados.
 * **Model**: Definição das tabelas do banco.
 
-## Rodando o projeto localmente (sem Docker)
+## Rodando o projeto, sem Docker:
 
 - Instale o JDK 21.
 - Clone o repositório: `git clone https://github.com/yaascarol/projetoApiTicketmaster.git`
@@ -41,7 +41,7 @@ mvn clean spring-boot:run
 ```
 Acesse em: http://localhost:8080/swagger-ui/index.html
 
-## Rodando o projeto com Docker
+## Rodando o projeto, com Docker:
 
 Se você tiver o Docker instalado, pode rodar o projeto na sua máquina sem instalar o Java, através do terminal utilizando os seguintes comandos:
 
