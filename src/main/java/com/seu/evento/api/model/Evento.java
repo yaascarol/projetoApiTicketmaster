@@ -4,16 +4,13 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Getter // Melhor que @Data para evitar loops
+@Getter
 @Setter
-@ToString(exclude = {"ingressos", "categorias"})
 public class Evento {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,17 +22,8 @@ public class Evento {
     private String nome;
 
     private LocalDateTime dataEvento;
-
     private String local;
 
     @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL)
     private List<Ingresso> ingressos;
-
-    @ManyToMany
-    @JoinTable(
-        name = "evento_categoria",
-        joinColumns = @JoinColumn(name = "evento_id"),
-        inverseJoinColumns = @JoinColumn(name = "categoria_id")
-    )
-    private List<Categoria> categorias;
 }
