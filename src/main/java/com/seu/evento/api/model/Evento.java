@@ -2,11 +2,16 @@ package com.seu.evento.api.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Data
+@Getter // Melhor que @Data para evitar loops
+@Setter
+@ToString(exclude = {"ingressos", "categorias"})
 public class Evento {
 
     @Id
@@ -24,5 +29,13 @@ public class Evento {
     private String local;
 
     @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL)
-    private java.util.List<Ingresso> ingressos;
+    private List<Ingresso> ingressos;
+
+    @ManyToMany
+    @JoinTable(
+        name = "evento_categoria",
+        joinColumns = @JoinColumn(name = "evento_id"),
+        inverseJoinColumns = @JoinColumn(name = "categoria_id")
+    )
+    private List<Categoria> categorias;
 }
