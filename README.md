@@ -30,7 +30,7 @@ O sistema permite gerenciar o ciclo de vida de uma venda de ingressos.
 * **Repository**: Interface de comunicação com o banco de dados.
 * **Model**: Definição das tabelas do banco.
 
-## Rodando o projeto, sem Docker:
+### Rodando o projeto, sem Docker:
 
 - Instale o JDK 21.
 - Clone o repositório: `git clone https://github.com/yaascarol/projetoApiTicketmaster.git`
@@ -41,7 +41,7 @@ mvn clean spring-boot:run
 ```
 Acesse em: http://localhost:8080/swagger-ui/index.html
 
-## Rodando o projeto, com Docker:
+### Rodando o projeto, com Docker:
 
 Se você tiver o Docker instalado, pode rodar o projeto na sua máquina sem instalar o Java, através do terminal utilizando os seguintes comandos:
 
@@ -51,4 +51,5 @@ docker run -p 8080:8080 ticket-api
 _ Inicia o container _
 Acesse em: http://localhost:8080/swagger-ui/index.html
 
-Desenvolvido por: Yasmin Carolina
+
+### Desenvolvido por: Yasmin Carolina
