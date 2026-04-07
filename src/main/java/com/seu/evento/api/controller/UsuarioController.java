@@ -43,14 +43,11 @@ public class UsuarioController {
         return EntityModel.of(obj, linkTo(methodOn(UsuarioController.class).buscarPorId(id)).withSelfRel());
     }
 
-    @PostMapping
-    public ResponseEntity<EntityModel<Usuario>> criar(@Valid @RequestBody Usuario obj) {
-        if (obj.getApiKey() == null) {
-            obj.setApiKey(UUID.randomUUID().toString());
-        }
-        Usuario salvo = repository.save(obj);
-        return ResponseEntity.status(201).body(buscarPorId(salvo.getId()));
-    }
+@PostMapping
+public ResponseEntity<EntityModel<Usuario>> criar(@Valid @RequestBody Usuario obj) {
+    Usuario salvo = repository.save(obj);
+    return ResponseEntity.status(201).body(buscarPorId(salvo.getId()));
+}
 
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> atualizar(@PathVariable Long id, @Valid @RequestBody Usuario obj) {
