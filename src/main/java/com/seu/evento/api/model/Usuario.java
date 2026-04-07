@@ -1,27 +1,30 @@
 package com.seu.evento.api.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.Data;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 @Entity
-@Data
+@Getter
+@Setter
+@ToString(exclude = "perfil")
 public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Nome obrigatório")
+    @NotBlank(message = "O nome é obrigatório")
     private String nome;
 
-    @Email(message = "Digite um email válido")
-    @NotBlank
-    @Column(unique = true)
+    @NotBlank(message = "O email é obrigatório")
+    @Email(message = "Email inválido")
     private String email;
 
-    @Size(min = 8, message = "Digite no mínimo 8 caracteres")
-    private String senha;
-
-    private String apiKey;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "perfil_id", referencedColumnName = "id")
+    private Perfil perfil;
 }
