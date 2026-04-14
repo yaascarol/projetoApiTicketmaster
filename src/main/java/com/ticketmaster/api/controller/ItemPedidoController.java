@@ -24,7 +24,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping("/v1/itens-pedido")
+@RequestMapping("/itens-pedido")
 @Tag(name = "Itens de Pedido", description = "Gerenciamento dos itens de cada pedido")
 public class ItemPedidoController {
 

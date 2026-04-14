@@ -1,4 +1,4 @@
-package com.seu.evento.api.config;
+package com.ticketmaster.api.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
@@ -18,6 +18,8 @@ public class OpenApiConfig {
                                 API RESTful para gerenciamento de eventos, ingressos e pedidos.
                                 Permite criar e consultar eventos, comprar ingressos e acompanhar pedidos de forma paginada.
                                 Integra com a API oficial da Ticketmaster para importação de eventos externos.
+                                Desenvolvido para a disciplina de Web Services — SENAC TSI
+                                Desenvolvedora: Yasmin Carolina.
                                 """)
                         .version("1.0.0")
                         .contact(new Contact()
