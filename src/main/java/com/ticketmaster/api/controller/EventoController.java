@@ -1,4 +1,4 @@
-package com.seu.evento.api.controller;
+package com.ticketmaster.api.controller;
 
 import com.seu.evento.api.exception.ResourceNotFoundException;
 import com.seu.evento.api.model.Evento;
