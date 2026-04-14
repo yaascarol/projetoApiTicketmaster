@@ -1,7 +1,7 @@
-package com.seu.evento.api.controller;
+package com.ticketmaster.api.controller;
 
-import com.seu.evento.api.model.Ingresso;
-import com.seu.evento.api.repository.IngressoRepository;
+import com.ticketmaster.api.model.Ingresso;
+import com.ticketmaster.api.repository.IngressoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

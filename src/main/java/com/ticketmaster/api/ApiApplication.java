@@ -1,4 +1,4 @@
-package com.seu.evento.api;
+package com.ticketmaster.api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

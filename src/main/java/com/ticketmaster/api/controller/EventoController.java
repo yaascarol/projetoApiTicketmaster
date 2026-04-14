@@ -1,6 +1,6 @@
-package com.seu.evento.api.controller;
+package com.ticketmaster.api.controller;
 
-import com.seu.evento.api.service.TicketmasterService;
+import com.ticketmaster.api.service.TicketmasterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

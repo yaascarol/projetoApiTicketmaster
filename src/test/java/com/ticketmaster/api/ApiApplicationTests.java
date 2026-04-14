@@ -1,4 +1,4 @@
-package com.seu.evento.api;
+package com.ticketmaster.api;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

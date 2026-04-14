@@ -1,4 +1,4 @@
-package com.seu.evento.api.service;
+package com.ticketmaster.api.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
