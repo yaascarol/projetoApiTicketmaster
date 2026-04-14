@@ -2,6 +2,7 @@ package com.ticketmaster.api.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,6 +17,7 @@ public class Pedido {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Positive(message = "O ID não pode ser negativo")
     private Long id;
 
     //não envia ao body

@@ -14,6 +14,7 @@ public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Positive(message = "O ID não pode ser negativo")
     private Long id;
     @NotBlank(message = "O nome é obrigatório")
     private String nome;

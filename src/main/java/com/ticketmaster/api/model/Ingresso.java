@@ -18,6 +18,7 @@ public class Ingresso {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Positive(message = "O ID não pode ser negativo")
     private Long id;
 
     @NotNull(message = "O tipo de ingresso é obrigatório")
