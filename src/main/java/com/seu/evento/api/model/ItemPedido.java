@@ -7,16 +7,16 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-public class Perfil {
-
+public class ItemPedido {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String bio;
-    
-    private String redeSocial;
+    private Integer quantidade;
 
-    @OneToOne(mappedBy = "perfil")
-    private Usuario usuario;
+    @ManyToOne
+    private Pedido pedido;
+
+    @ManyToOne
+    private Ingresso ingresso;
 }

@@ -1,8 +1,5 @@
-package com.ticketmaster.api.model;
+package com.seu.evento.api.model;
 
 public enum StatusPedido {
-    PENDENTE,
-    PAGO,
-    CANCELADO,
-    REEMBOLSADO
+    PENDENTE, PAGO, CANCELADO
 }
