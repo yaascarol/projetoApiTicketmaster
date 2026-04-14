@@ -1,8 +1,8 @@
 package com.ticketmaster.api.controller;
 
-import com.seu.evento.api.exception.ResourceNotFoundException;
-import com.seu.evento.api.model.Evento;
-import com.seu.evento.api.repository.EventoRepository;
+import com.ticketmaster.api.exception.ResourceNotFoundException;
+import com.ticketmaster.api.model.Evento;
+import com.ticketmaster.api.repository.EventoRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -45,8 +45,8 @@ public class EventoController {
 
     @Operation(summary = "Buscar evento por ID")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Evento encontrado"),
-        @ApiResponse(responseCode = "404", description = "Evento não encontrado")
+            @ApiResponse(responseCode = "200", description = "Evento encontrado"),
+            @ApiResponse(responseCode = "404", description = "Evento não encontrado")
     })
     @GetMapping("/{id}")
     public ResponseEntity<EntityModel<Evento>> buscarPorId(@PathVariable Long id) {
@@ -57,8 +57,8 @@ public class EventoController {
 
     @Operation(summary = "Criar novo evento")
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Evento criado com sucesso"),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos")
+            @ApiResponse(responseCode = "201", description = "Evento criado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
     @PostMapping
     public ResponseEntity<EntityModel<Evento>> criar(@Valid @RequestBody Evento evento) {
@@ -68,9 +68,9 @@ public class EventoController {
 
     @Operation(summary = "Atualizar evento existente")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Evento atualizado"),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-        @ApiResponse(responseCode = "404", description = "Evento não encontrado")
+            @ApiResponse(responseCode = "200", description = "Evento atualizado"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "404", description = "Evento não encontrado")
     })
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<Evento>> atualizar(@PathVariable Long id, @Valid @RequestBody Evento evento) {
@@ -83,8 +83,8 @@ public class EventoController {
 
     @Operation(summary = "Deletar evento")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Evento deletado com sucesso"),
-        @ApiResponse(responseCode = "404", description = "Evento não encontrado")
+            @ApiResponse(responseCode = "204", description = "Evento deletado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Evento não encontrado")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
