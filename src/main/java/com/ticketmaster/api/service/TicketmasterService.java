@@ -1,17 +1,19 @@
 package com.ticketmaster.api.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Service
 public class TicketmasterService {
 
-    private final String API_KEY = "vm4lEvubTEujseI2pY6GZk77Tn5gH8Y7";
+    // Chave lida do application.properties — nunca hardcoded no código
+    @Value("${ticketmaster.api.key}")
+    private String apiKey;
 
     public String buscarEventos() {
         RestTemplate restTemplate = new RestTemplate();
-        String url = "https://app.ticketmaster.com/discovery/v2/events.json?apikey=" + API_KEY;
-
+        String url = "https://app.ticketmaster.com/discovery/v2/events.json?apikey=" + apiKey;
         return restTemplate.getForObject(url, String.class);
     }
 }
