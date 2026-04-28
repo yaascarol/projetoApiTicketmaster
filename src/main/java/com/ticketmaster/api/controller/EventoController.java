@@ -25,6 +25,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/eventos")
+@RequestHeader("Idempotency-Key") String idempotencyKey;
 @Tag(name = "Eventos", description = "Gerenciamento de eventos")
 public class EventoController {
 
