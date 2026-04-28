@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
+    @Parameter(description = "Required key used to make repeated create requests idempotent", required = true)
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
