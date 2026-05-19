@@ -16,6 +16,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,14 +58,15 @@ public class UsuarioController {
 
     @Operation(summary = "Criar novo usuário")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+        @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
     @PostMapping
     public ResponseEntity<EntityModel<Usuario>> criar(@Valid @RequestBody Usuario obj) {
-        Usuario salvo = repository.save(obj);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
-    }
+    obj.setApiKey(UUID.randomUUID().toString());
+    Usuario salvo = repository.save(obj);
+    return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
+}
 
     @Operation(summary = "Atualizar usuário existente")
     @ApiResponses({
