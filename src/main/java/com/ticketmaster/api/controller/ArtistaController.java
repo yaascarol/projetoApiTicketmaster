@@ -61,9 +61,22 @@ public class ArtistaController {
             @ApiResponse(responseCode = "201", description = "Artista criado com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
+
     @PostMapping
-    public ResponseEntity<EntityModel<Artista>> criar(@Valid @RequestBody Artista obj) {
-        Artista salvo = repository.save(obj);
+    public ResponseEntity<EntityModel<Artista>> criar(
+        @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+        @Valid @RequestBody Artista obj) {
+            obj.setStatus(StatusArtista.PENDENTE);
+            Artista salvo = repository.save(obj);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
+        }
+
+    @PostMapping
+    public ResponseEntity<EntityModel<Pedido>> criar(
+        @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+        @Valid @RequestBody Pedido obj) {
+            obj.setStatus(StatusPedido.PENDENTE);
+            Pedido salvo = repository.save(obj);
         return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
     }
 
