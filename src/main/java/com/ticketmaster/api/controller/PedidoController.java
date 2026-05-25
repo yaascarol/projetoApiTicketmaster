@@ -84,12 +84,15 @@ public class PedidoController {
             @ApiResponse(responseCode = "201", description = "Pedido criado com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
+
     @PostMapping
-    public ResponseEntity<EntityModel<Pedido>> criar(@Valid @RequestBody Pedido obj) {
-        obj.setStatus(StatusPedido.PENDENTE);
-        Pedido salvo = repository.save(obj);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
-    }
+    public ResponseEntity<EntityModel<Pedido>> criar(
+        @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+        @Valid @RequestBody Pedido obj) {
+            obj.setStatus(StatusPedido.PENDENTE);
+            Pedido salvo = repository.save(obj);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
+        }
 
     @Operation(summary = "Atualizar pedido existente")
     @ApiResponses({
