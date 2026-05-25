@@ -93,10 +93,13 @@ public class EventoController {
             @ApiResponse(responseCode = "401", description = "X-API-Key inválida ou ausente"),
             @ApiResponse(responseCode = "409", description = "Requisição duplicada (X-Idempotency-Key já usada)")
     })
+
     @PostMapping
-    public ResponseEntity<EntityModel<Evento>> criar(@Valid @RequestBody Evento evento) {
-        Evento salvo = repository.save(evento);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
+    public ResponseEntity<EntityModel<Evento>> criar(
+        @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+        @Valid @RequestBody Evento evento) {
+    Evento salvo = repository.save(evento);
+    return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
     }
 
     @Operation(summary = "Atualizar evento existente")
