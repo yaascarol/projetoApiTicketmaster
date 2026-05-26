@@ -100,7 +100,6 @@ public class IngressoController {
     })
     @PostMapping
     public ResponseEntity<EntityModel<IngressoResponse>> criar(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody IngressoRequest req) {
 
         if (idempotencyKey == null || idempotencyKey.isBlank())
