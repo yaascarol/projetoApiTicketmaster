@@ -1,14 +1,5 @@
 package com.ticketmaster.api.model;
 
 public enum GeneroMusical {
-    ROCK,
-    POP,
-    SERTANEJO,
-    FUNK,
-    ELETRONICA,
-    JAZZ,
-    CLASSICA,
-    PAGODE,
-    FORRÓ,
-    HIPHOP
+    POP, ROCK, SERTANEJO, FUNK, MPB, ELETRONICA, HIP_HOP, JAZZ, CLASSICA, GOSPEL
 }

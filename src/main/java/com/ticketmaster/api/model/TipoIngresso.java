@@ -1,8 +1,3 @@
 package com.ticketmaster.api.model;
 
-public enum TipoIngresso {
-    PISTA,
-    VIP,
-    MEIA_ENTRADA,
-    CAMAROTE
-}
+public enum TipoIngresso { PISTA, CADEIRA, VIP, CAMAROTE, MEIA_ENTRADA }

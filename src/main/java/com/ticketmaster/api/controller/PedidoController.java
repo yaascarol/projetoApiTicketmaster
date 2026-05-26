@@ -1,130 +1,165 @@
 package com.ticketmaster.api.controller;
 
+import com.ticketmaster.api.assemblers.PedidoModelAssembler;
+import com.ticketmaster.api.dto.request.PedidoRequest;
+import com.ticketmaster.api.dto.response.PedidoResponse;
 import com.ticketmaster.api.exception.ResourceNotFoundException;
 import com.ticketmaster.api.model.Pedido;
 import com.ticketmaster.api.model.StatusPedido;
+import com.ticketmaster.api.model.Usuario;
 import com.ticketmaster.api.repository.PedidoRepository;
+import com.ticketmaster.api.repository.UsuarioRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.hateoas.CollectionModel;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.http.HttpStatus;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import java.net.URI;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/pedidos")
-@Tag(name = "Pedidos", description = "Gerenciamento de pedidos")
+@RequiredArgsConstructor
+@Tag(name = "Pedidos", description = "Gerenciamento de pedidos de ingressos")
 public class PedidoController {
 
-    @Autowired
-    private PedidoRepository repository;
+    private final PedidoRepository   pedidoRepository;
+    private final UsuarioRepository  usuarioRepository;
+    private final PedidoModelAssembler assembler;
 
-    // GET 1 — lista todos
-    @Operation(summary = "Listar todos os pedidos (paginado)")
-    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @Operation(summary = "Listar todos os pedidos")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso.")
     @GetMapping
-    public ResponseEntity<CollectionModel<EntityModel<Pedido>>> listar(Pageable pageable) {
-        Page<Pedido> page = repository.findAll(pageable);
-        List<EntityModel<Pedido>> resources = page.stream()
-                .map(this::toModel)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(CollectionModel.of(resources,
-                linkTo(methodOn(PedidoController.class).listar(pageable)).withSelfRel()));
+    public ResponseEntity<PagedModel<EntityModel<PedidoResponse>>> listar(
+            @ParameterObject Pageable pageable,
+            PagedResourcesAssembler<PedidoResponse> pagedAssembler) {
+
+        Page<PedidoResponse> page = pedidoRepository.findAll(pageable).map(this::toResponse);
+        return ResponseEntity.ok(pagedAssembler.toModel(page, assembler));
     }
 
-    // GET 2 — por ID
     @Operation(summary = "Buscar pedido por ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Pedido encontrado"),
-            @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+            @ApiResponse(responseCode = "200", description = "Pedido encontrado."),
+            @ApiResponse(responseCode = "404", description = "Pedido não encontrado.",
+                    content = @Content(schema = @Schema(hidden = true)))
     })
     @GetMapping("/{id}")
-    public ResponseEntity<EntityModel<Pedido>> buscarPorId(@PathVariable Long id) {
-        Pedido obj = repository.findById(id)
+    public ResponseEntity<EntityModel<PedidoResponse>> buscarPorId(@PathVariable Long id) {
+        Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
-        return ResponseEntity.ok(toModel(obj));
+        return ResponseEntity.ok(assembler.toModel(toResponse(pedido)));
     }
 
-    // GET 3 — consulta personalizada: filtra por usuário e/ou status
-    @Operation(summary = "Buscar pedidos por usuário e/ou status (consulta personalizada, paginado)",
-            description = "Ambos os parâmetros são opcionais. Informe usuarioId, status, ou os dois juntos.")
-    @ApiResponse(responseCode = "200", description = "Pedidos encontrados")
+    @Operation(summary = "Buscar pedidos por usuário e/ou status",
+               description = "Consulta personalizada paginada. Todos os parâmetros são opcionais.")
+    @ApiResponse(responseCode = "200", description = "Pedidos encontrados.")
     @GetMapping("/busca")
-    public ResponseEntity<Page<Pedido>> buscar(
+    public ResponseEntity<PagedModel<EntityModel<PedidoResponse>>> buscar(
             @RequestParam(required = false) Long usuarioId,
             @RequestParam(required = false) StatusPedido status,
-            Pageable pageable) {
-        if (usuarioId != null && status != null) {
-            return ResponseEntity.ok(repository.findByUsuarioIdAndStatus(usuarioId, status, pageable));
-        }
-        if (usuarioId != null) {
-            return ResponseEntity.ok(repository.findByUsuarioId(usuarioId, pageable));
-        }
-        if (status != null) {
-            return ResponseEntity.ok(repository.findByStatus(status, pageable));
-        }
-        return ResponseEntity.ok(repository.findAll(pageable));
+            @ParameterObject Pageable pageable,
+            PagedResourcesAssembler<PedidoResponse> pagedAssembler) {
+
+        Page<Pedido> result;
+        if (usuarioId != null && status != null)
+            result = pedidoRepository.findByUsuarioIdAndStatus(usuarioId, status, pageable);
+        else if (usuarioId != null) result = pedidoRepository.findByUsuarioId(usuarioId, pageable);
+        else if (status != null)    result = pedidoRepository.findByStatus(status, pageable);
+        else                        result = pedidoRepository.findAll(pageable);
+
+        return ResponseEntity.ok(pagedAssembler.toModel(result.map(this::toResponse), assembler));
     }
 
     @Operation(summary = "Criar novo pedido")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Pedido criado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+            @ApiResponse(responseCode = "201", description = "Pedido criado com sucesso."),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos."),
+            @ApiResponse(responseCode = "401", description = "X-API-Key inválida ou ausente."),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado."),
+            @ApiResponse(responseCode = "409", description = "Requisição duplicada (X-Idempotency-Key já usada).")
     })
-
     @PostMapping
-    public ResponseEntity<EntityModel<Pedido>> criar(
-        @RequestHeader("X-Idempotency-Key") String idempotencyKey,
-        @Valid @RequestBody Pedido obj) {
-            obj.setStatus(StatusPedido.PENDENTE);
-            Pedido salvo = repository.save(obj);
-            return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
-        }
+    public ResponseEntity<EntityModel<PedidoResponse>> criar(
+            @Parameter(hidden = true) @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody PedidoRequest req) {
 
-    @Operation(summary = "Atualizar pedido existente")
+        Usuario usuario = usuarioRepository.findById(req.getUsuarioId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário", req.getUsuarioId()));
+
+        Pedido pedido = new Pedido();
+        pedido.setUsuario(usuario);
+        pedido.setStatus(StatusPedido.PENDENTE);
+        pedido.setDataPedido(LocalDateTime.now());
+
+        Pedido salvo = pedidoRepository.save(pedido);
+        URI location = URI.create("/pedidos/" + salvo.getId());
+        return ResponseEntity.created(location).body(assembler.toModel(toResponse(salvo)));
+    }
+
+    @Operation(summary = "Atualizar status do pedido")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Pedido atualizado"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-            @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+            @ApiResponse(responseCode = "200", description = "Pedido atualizado."),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos."),
+            @ApiResponse(responseCode = "401", description = "X-API-Key inválida ou ausente."),
+            @ApiResponse(responseCode = "404", description = "Pedido não encontrado.")
     })
     @PutMapping("/{id}")
-    public ResponseEntity<EntityModel<Pedido>> atualizar(@PathVariable Long id, @Valid @RequestBody Pedido obj) {
-        repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
-        obj.setId(id);
-        return ResponseEntity.ok(toModel(repository.save(obj)));
+    public ResponseEntity<EntityModel<PedidoResponse>> atualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody PedidoRequest req) {
+
+        Pedido existente = pedidoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
+
+        if (req.getUsuarioId() != null) {
+            Usuario usuario = usuarioRepository.findById(req.getUsuarioId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Usuário", req.getUsuarioId()));
+            existente.setUsuario(usuario);
+        }
+
+        return ResponseEntity.ok(assembler.toModel(toResponse(pedidoRepository.save(existente))));
     }
 
     @Operation(summary = "Deletar pedido")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Pedido deletado com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+            @ApiResponse(responseCode = "204", description = "Pedido deletado com sucesso."),
+            @ApiResponse(responseCode = "401", description = "X-API-Key inválida ou ausente."),
+            @ApiResponse(responseCode = "404", description = "Pedido não encontrado.")
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
-        if (!repository.existsById(id)) {
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        if (!pedidoRepository.existsById(id))
             throw new ResourceNotFoundException("Pedido", id);
-        }
-        repository.deleteById(id);
+        pedidoRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    private EntityModel<Pedido> toModel(Pedido pedido) {
-        return EntityModel.of(pedido,
-                linkTo(methodOn(PedidoController.class).buscarPorId(pedido.getId())).withSelfRel(),
-                linkTo(methodOn(PedidoController.class).atualizar(pedido.getId(), pedido)).withRel("update"),
-                linkTo(methodOn(PedidoController.class).excluir(pedido.getId())).withRel("delete"));
+    // ── helper ────────────────────────────────────────────────────────────────
+
+    private PedidoResponse toResponse(Pedido p) {
+        PedidoResponse r = new PedidoResponse();
+        r.setId(p.getId());
+        r.setStatus(p.getStatus());
+        r.setDataPedido(p.getDataPedido());
+        r.setTotalItens(p.getItens() != null ? p.getItens().size() : 0);
+        if (p.getUsuario() != null) {
+            r.setUsuarioId(p.getUsuario().getId());
+            r.setNomeUsuario(p.getUsuario().getNome());
+        }
+        return r;
     }
 }

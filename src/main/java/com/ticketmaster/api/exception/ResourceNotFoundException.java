@@ -1,11 +1,10 @@
 package com.ticketmaster.api.exception;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
-@ResponseStatus(HttpStatus.NOT_FOUND)
 public class ResourceNotFoundException extends RuntimeException {
     public ResourceNotFoundException(String recurso, Long id) {
-        super(recurso + " com id " + id + " não encontrado(a).");
+        super(recurso + " com ID " + id + " não encontrado(a).");
+    }
+    public ResourceNotFoundException(String mensagem) {
+        super(mensagem);
     }
 }
