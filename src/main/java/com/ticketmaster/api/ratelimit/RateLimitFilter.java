@@ -17,23 +17,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Set;
 
-/**
- * Filtro de rate limiting por IP usando Bucket4j (token bucket algorithm).
- *
- * Limites (por IP real do cliente):
- *   GET                         → 10 requisições por minuto
- *   POST / PUT / PATCH / DELETE → 5 requisições por minuto
- *
- * Resolução de IP (em ordem de prioridade):
- *   1. CF-Connecting-IP  → IP real quando atrás do Cloudflare/Render
- *   2. X-Forwarded-For   → IP real quando atrás de outros proxies
- *   3. RemoteAddr        → IP direto (local/dev)
- *
- * Headers de resposta:
- *   X-Rate-Limit-Remaining           → tokens restantes
- *   Retry-After                      → segundos até próximo token (só no 429)
- *   X-Rate-Limit-Retry-After-Seconds → igual ao Retry-After
- */
 @Slf4j
 @Component
 @Order(1)
@@ -66,6 +49,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String  ip      = resolveIp(request);
         boolean isWrite = WRITE_METHODS.contains(request.getMethod().toUpperCase());
 
+        log.info("Rate limit check — ip={} method={} uri={}", ip, request.getMethod(), request.getRequestURI());
+
         Bucket           bucket = rateLimitConfig.resolveBucket(ip, isWrite);
         ConsumptionProbe probe  = bucket.tryConsumeAndReturnRemaining(1);
 
@@ -91,21 +76,24 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 Instant.now(), retryAfter, request.getRequestURI()));
     }
 
-    /**
-     * Resolve o IP real do cliente em ordem de prioridade.
-     * CF-Connecting-IP é o mais confiável quando hospedado no Render + Cloudflare.
-     */
     private String resolveIp(HttpServletRequest request) {
-        // 1. Cloudflare / Render
-        String cf = request.getHeader("CF-Connecting-IP");
-        if (cf != null && !cf.isBlank()) return cf.trim();
+        // Tenta todos os headers possíveis em ordem
+        String[] headers = {
+                "CF-Connecting-IP",      // Cloudflare/Render
+                "X-Real-IP",             // Nginx
+                "X-Forwarded-For",       // Proxy genérico
+                "Proxy-Client-IP",
+                "WL-Proxy-Client-IP"
+        };
 
-        // 2. Proxy genérico
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank())
-            return forwarded.split(",")[0].trim();
+        for (String header : headers) {
+            String ip = request.getHeader(header);
+            if (ip != null && !ip.isBlank() && !"unknown".equalsIgnoreCase(ip)) {
+                // X-Forwarded-For pode ter múltiplos IPs separados por vírgula
+                return ip.split(",")[0].trim();
+            }
+        }
 
-        // 3. Conexão direta (local)
         return request.getRemoteAddr();
     }
 }
