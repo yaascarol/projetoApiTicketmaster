@@ -18,10 +18,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Configuration
 public class RateLimitConfig {
 
-    private static final int  READ_CAPACITY    = 30;
+    private static final int  READ_CAPACITY    = 10;
     private static final long READ_REFILL_SECS = 60;
 
-    private static final int  WRITE_CAPACITY    = 10;
+    private static final int  WRITE_CAPACITY    = 5;
     private static final long WRITE_REFILL_SECS = 60;
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();

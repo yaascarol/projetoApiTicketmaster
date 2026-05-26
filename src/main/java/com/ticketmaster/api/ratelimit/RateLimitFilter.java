@@ -20,9 +20,13 @@ import java.util.Set;
 /**
  * Filtro de rate limiting por IP usando Bucket4j (token bucket algorithm).
  *
+ * Limites (por IP):
+ *   GET                         → 30 requisições por minuto
+ *   POST / PUT / PATCH / DELETE → 10 requisições por minuto
+ *
  * Headers de resposta:
- *   X-Rate-Limit-Remaining          → tokens restantes após a requisição
- *   Retry-After                     → segundos até próximo token (só no 429)
+ *   X-Rate-Limit-Remaining           → tokens restantes após a requisição
+ *   Retry-After                      → segundos até próximo token (só no 429)
  *   X-Rate-Limit-Retry-After-Seconds → igual ao Retry-After
  */
 @Slf4j
@@ -41,11 +45,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
+        // Ignora rotas de infraestrutura — aplica em TODOS os endpoints da API
         return path.startsWith("/swagger-ui")
                 || path.startsWith("/api-docs")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/h2-console")
-                || path.startsWith("/actuator");
+                || path.startsWith("/actuator")
+                || request.getMethod().equalsIgnoreCase("OPTIONS");
     }
 
     @Override
@@ -53,21 +59,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
 
-        String ip      = resolveIp(request);
+        String  ip      = resolveIp(request);
         boolean isWrite = WRITE_METHODS.contains(request.getMethod().toUpperCase());
 
-        Bucket bucket          = rateLimitConfig.resolveBucket(ip, isWrite);
-        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+        Bucket           bucket = rateLimitConfig.resolveBucket(ip, isWrite);
+        ConsumptionProbe probe  = bucket.tryConsumeAndReturnRemaining(1);
 
         if (probe.isConsumed()) {
-            response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
+            response.setHeader("X-Rate-Limit-Remaining",
+                    String.valueOf(probe.getRemainingTokens()));
             chain.doFilter(request, response);
             return;
         }
 
         long retryAfter = probe.getNanosToWaitForRefill() / 1_000_000_000L;
-        log.warn("Rate limit excedido — ip={} method={} retryAfter={}s",
-                ip, request.getMethod(), retryAfter);
+        log.warn("Rate limit excedido — ip={} method={} uri={} retryAfter={}s",
+                ip, request.getMethod(), request.getRequestURI(), retryAfter);
 
         response.setStatus(429);
         response.setContentType("application/json;charset=UTF-8");
@@ -75,12 +82,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
         response.setHeader("X-Rate-Limit-Retry-After-Seconds", String.valueOf(retryAfter));
         response.getWriter().write(String.format(
                 "{\"timestamp\":\"%s\",\"status\":429,\"erro\":\"Too Many Requests\"," +
-                "\"mensagem\":\"Limite de requisições excedido. Tente novamente em %d segundo(s).\"," +
-                "\"path\":\"%s\"}",
+                        "\"mensagem\":\"Limite de requisições excedido. Tente novamente em %d segundo(s).\"," +
+                        "\"path\":\"%s\"}",
                 Instant.now(), retryAfter, request.getRequestURI()));
     }
 
-    /** Resolve IP real mesmo atrás de proxy/load balancer. */
+    /** Resolve IP real mesmo atrás de proxy/load balancer (como o Render). */
     private String resolveIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank())
