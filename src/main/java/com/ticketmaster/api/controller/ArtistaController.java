@@ -98,7 +98,6 @@ public class ArtistaController {
     })
     @PostMapping
     public ResponseEntity<EntityModel<ArtistaResponse>> criar(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody ArtistaRequest req) {
 
         if (idempotencyKey == null || idempotencyKey.isBlank())
