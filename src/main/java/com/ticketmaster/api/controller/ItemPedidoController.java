@@ -60,11 +60,15 @@ public class ItemPedidoController {
             @ApiResponse(responseCode = "201", description = "Item adicionado com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
+
     @PostMapping
-    public ResponseEntity<EntityModel<ItemPedido>> adicionar(@Valid @RequestBody ItemPedido obj) {
-        ItemPedido salvo = repository.save(obj);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
-    }
+    public ResponseEntity<EntityModel<ItemPedido>> criar(
+        @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+        @Valid @RequestBody ItemPedido obj) {
+            obj.setStatus(StatusItemPedido.PENDENTE);
+            ItemPedido salvo = repository.save(obj);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
+        }
 
     @Operation(summary = "Atualizar item de pedido")
     @ApiResponses({

@@ -1,9 +1,11 @@
 package com.ticketmaster.api.controller;
 
+import com.ticketmaster.api.dto.EventoResumoDTO;
 import com.ticketmaster.api.exception.ResourceNotFoundException;
 import com.ticketmaster.api.model.Evento;
 import com.ticketmaster.api.repository.EventoRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,65 +27,101 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/eventos")
-@Tag(name = "Eventos", description = "Gerenciamento de eventos")
+@Tag(name = "Eventos", description = "Gerenciamento de eventos — suporta X-API-Version: 1 (padrão) e 2 (simplificado)")
 public class EventoController {
 
     @Autowired
     private EventoRepository repository;
 
-    @Operation(summary = "Listar todos os eventos (paginado)")
+    @Operation(
+        summary = "Listar todos os eventos (paginado)",
+        description = "Use o header X-API-Version: 1 para resposta completa com HATEOAS. " +
+                      "Use X-API-Version: 2 para resposta simplificada sem artistas."
+    )
     @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     @GetMapping
-    public ResponseEntity<CollectionModel<EntityModel<Evento>>> listar(Pageable pageable) {
+    public ResponseEntity<?> listar(
+            Pageable pageable,
+            @Parameter(description = "Versão da API (1 = completo, 2 = simplificado)", example = "1")
+            @RequestHeader(value = "X-API-Version", defaultValue = "1") String version) {
+
         Page<Evento> eventos = repository.findAll(pageable);
+
+        if ("2".equals(version)) {
+            List<EventoResumoDTO> resumos = eventos.stream()
+                    .map(this::toResumoDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(resumos);
+        }
+
         List<EntityModel<Evento>> resources = eventos.stream()
-                .map(e -> toModel(e))
+                .map(this::toModel)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(CollectionModel.of(resources,
-                linkTo(methodOn(EventoController.class).listar(pageable)).withSelfRel()));
+                linkTo(methodOn(EventoController.class).listar(pageable, version)).withSelfRel()));
     }
 
-    @Operation(summary = "Buscar evento por ID")
+    @Operation(
+        summary = "Buscar evento por ID",
+        description = "Use o header X-API-Version: 1 para resposta completa com artistas e HATEOAS. " +
+                      "Use X-API-Version: 2 para resposta resumida."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Evento encontrado"),
             @ApiResponse(responseCode = "404", description = "Evento não encontrado")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<EntityModel<Evento>> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<?> buscarPorId(
+            @PathVariable Long id,
+            @Parameter(description = "Versão da API (1 = completo, 2 = simplificado)", example = "1")
+            @RequestHeader(value = "X-API-Version", defaultValue = "1") String version) {
+
         Evento evento = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento", id));
+
+        if ("2".equals(version)) {
+            return ResponseEntity.ok(toResumoDTO(evento));
+        }
+
         return ResponseEntity.ok(toModel(evento));
     }
 
     @Operation(summary = "Criar novo evento")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Evento criado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "X-API-Key inválida ou ausente"),
+            @ApiResponse(responseCode = "409", description = "Requisição duplicada (X-Idempotency-Key já usada)")
     })
+
     @PostMapping
-    public ResponseEntity<EntityModel<Evento>> criar(@Valid @RequestBody Evento evento) {
-        Evento salvo = repository.save(evento);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
+    public ResponseEntity<EntityModel<Evento>> criar(
+        @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+        @Valid @RequestBody Evento evento) {
+    Evento salvo = repository.save(evento);
+    return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
     }
 
     @Operation(summary = "Atualizar evento existente")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Evento atualizado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "X-API-Key inválida ou ausente"),
             @ApiResponse(responseCode = "404", description = "Evento não encontrado")
     })
     @PutMapping("/{id}")
-    public ResponseEntity<EntityModel<Evento>> atualizar(@PathVariable Long id, @Valid @RequestBody Evento evento) {
-        // Garante que o ID existe antes de atualizar
+    public ResponseEntity<EntityModel<Evento>> atualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody Evento evento) {
         repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Evento", id));
         evento.setId(id);
-        Evento atualizado = repository.save(evento);
-        return ResponseEntity.ok(toModel(atualizado));
+        return ResponseEntity.ok(toModel(repository.save(evento)));
     }
 
     @Operation(summary = "Deletar evento")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Evento deletado com sucesso"),
+            @ApiResponse(responseCode = "401", description = "X-API-Key inválida ou ausente"),
             @ApiResponse(responseCode = "404", description = "Evento não encontrado")
     })
     @DeleteMapping("/{id}")
@@ -98,15 +136,27 @@ public class EventoController {
     @Operation(summary = "Buscar eventos por nome (consulta personalizada, paginado)")
     @ApiResponse(responseCode = "200", description = "Resultados encontrados")
     @GetMapping("/busca")
-    public ResponseEntity<Page<Evento>> buscarPorNome(@RequestParam String nome, Pageable pageable) {
+    public ResponseEntity<Page<Evento>> buscarPorNome(
+            @RequestParam String nome,
+            Pageable pageable) {
         return ResponseEntity.ok(repository.findByNomeContainingIgnoreCase(nome, pageable));
     }
 
-    // Monta EntityModel com links HATEOAS: self, update e delete
     private EntityModel<Evento> toModel(Evento evento) {
         return EntityModel.of(evento,
-                linkTo(methodOn(EventoController.class).buscarPorId(evento.getId())).withSelfRel(),
+                linkTo(methodOn(EventoController.class).buscarPorId(evento.getId(), "1")).withSelfRel(),
                 linkTo(methodOn(EventoController.class).atualizar(evento.getId(), evento)).withRel("update"),
                 linkTo(methodOn(EventoController.class).deletar(evento.getId())).withRel("delete"));
+    }
+
+    private EventoResumoDTO toResumoDTO(Evento evento) {
+        return new EventoResumoDTO(
+                evento.getId(),
+                evento.getNome(),
+                evento.getLocal(),
+                evento.getDataEvento() != null ? evento.getDataEvento().toString() : null,
+                evento.getStatus() != null ? evento.getStatus().name() : null,
+                "v2"
+        );
     }
 }

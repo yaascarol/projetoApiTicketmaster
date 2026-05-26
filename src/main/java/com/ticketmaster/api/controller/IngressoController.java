@@ -91,6 +91,14 @@ public class IngressoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
     }
 
+    @PostMapping
+    public ResponseEntity<EntityModel<Ingresso>> criar(
+        @RequestHeader("X-Idempotency-Key") String idempotencyKey,
+        @Valid @RequestBody Ingresso ingresso) {
+        Ingresso salvo = repository.save(ingresso);
+        return ResponseEntity.status(HttpStatus.CREATED).body(toModel(salvo));
+    }
+
     @Operation(summary = "Atualizar ingresso existente")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Ingresso atualizado"),
