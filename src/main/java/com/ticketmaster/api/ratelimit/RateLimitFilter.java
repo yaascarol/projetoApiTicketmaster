@@ -82,8 +82,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         response.setHeader("X-Rate-Limit-Retry-After-Seconds", String.valueOf(retryAfter));
         response.getWriter().write(String.format(
                 "{\"timestamp\":\"%s\",\"status\":429,\"erro\":\"Too Many Requests\"," +
-                        "\"mensagem\":\"Limite de requisições excedido. Tente novamente em %d segundo(s).\"," +
-                        "\"path\":\"%s\"}",
+                "\"mensagem\":\"Limite de requisições excedido. Tente novamente em %d segundo(s).\"," +
+                "\"path\":\"%s\"}",
                 Instant.now(), retryAfter, request.getRequestURI()));
     }
 

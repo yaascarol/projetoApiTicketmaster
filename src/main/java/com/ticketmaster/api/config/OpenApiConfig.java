@@ -25,27 +25,120 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Ticketmaster API")
                         .description("""
-                                API RESTful para gerenciamento de eventos, ingressos e pedidos.
+                                API RESTful para gerenciamento de eventos, artistas, ingressos e pedidos de uma plataforma de venda de ingressos.
 
-                                ## Autenticação
-                                Gere uma **X-API-Key** via `POST /api/auth/api-keys`.
-                                Use essa chave no header de todas as requisições POST, PUT e DELETE.
+                                ---
 
-                                ## Idempotência
-                                Todas as requisições POST exigem o header **X-Idempotency-Key** (UUID único).
-                                Reenviar a mesma chave retorna a resposta original sem reprocessar.
+                                ## 🔑 Autenticação — API Keys
 
-                                ## Versionamento
-                                Use **X-API-Version: v1** (simplificado) ou **v2** (padrão, HATEOAS completo).
-                                Versões inválidas retornam 400.
+                                Esta API utiliza autenticação por chave de acesso no header `X-API-Key`.
 
-                                ## Rate Limiting
-                                GET: 30 req/min por IP · POST/PUT/DELETE: 10 req/min por IP.
-                                Ao exceder, retorna 429 com o header **Retry-After** (segundos).
+                                **Como obter sua chave:**
+                                1. Acesse `POST /api/auth/api-keys`
+                                2. Informe seu nome (`owner`) e o nível de acesso desejado
+                                3. Copie o valor do campo `apiKey` retornado
+                                4. Clique em **Authorize** (🔒) no topo desta página e cole a chave
+
+                                **Níveis de acesso disponíveis:**
+                                - `READ` → permite apenas consultas (GET)
+                                - `WRITE` → permite consultas e alterações (GET, POST, PUT, DELETE)
+                                - `ADMIN` → acesso completo, incluindo revogar outras chaves
+
+                                A chave deve ser enviada no header de todas as requisições de escrita:
+                                ```
+                                X-API-Key: sua-chave-aqui
+                                ```
+
+                                ---
+
+                                ## 🔁 Idempotência
+
+                                Todas as requisições `POST` exigem o header `Idempotency-Key` com um UUID único por operação.
+
+                                **Como funciona:**
+                                - Na primeira vez que a chave é enviada, a requisição é processada normalmente
+                                - Se a mesma chave for enviada novamente, a API retorna a resposta original **sem reprocessar**
+                                - Isso evita cobranças ou cadastros duplicados em caso de falha de rede ou clique duplo
+
+                                **Exemplo de chave válida:**
+                                ```
+                                Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000
+                                ```
+
+                                Gere um UUID em: https://www.uuidgenerator.net
+
+                                ---
+
+                                ## 🔀 Versionamento
+
+                                A API suporta duas versões de resposta via header `X-API-Version`:
+
+                                | Versão | Comportamento |
+                                |--------|--------------|
+                                | `v2`   | Resposta completa com HATEOAS, links de navegação e metadados de paginação *(padrão)* |
+                                | `v1`   | Resposta simplificada, apenas campos essenciais, sem links |
+
+                                Versões inválidas retornam **400 Bad Request** com mensagem explicativa.
+
+                                O header `X-API-Version` é ecoado na resposta para confirmar qual versão foi utilizada.
+
+                                ---
+
+                                ## 🚦 Rate Limiting
+
+                                A API limita o número de requisições por IP para garantir estabilidade:
+
+                                | Tipo de operação | Limite |
+                                |-----------------|--------|
+                                | `GET` | 10 requisições por minuto |
+                                | `POST` / `PUT` / `DELETE` | 5 requisições por minuto |
+
+                                Ao exceder o limite, a API retorna **429 Too Many Requests** com os headers:
+                                - `Retry-After` → segundos até a próxima requisição ser aceita
+                                - `X-Rate-Limit-Retry-After-Seconds` → igual ao Retry-After
+
+                                ---
+
+                                ## 📄 Paginação
+
+                                Todos os endpoints de listagem suportam paginação via parâmetros de query:
+
+                                | Parâmetro | Descrição | Exemplo |
+                                |-----------|-----------|---------|
+                                | `page` | Número da página (começa em 0) | `?page=0` |
+                                | `size` | Itens por página | `?size=10` |
+                                | `sort` | Campo e direção de ordenação | `?sort=nome,asc` |
+
+                                A resposta inclui `totalElements`, `totalPages`, e links HATEOAS de navegação (`first`, `prev`, `next`, `last`).
+
+                                ---
+
+                                ## ⚡ Dados pré-carregados
+
+                                A API já inicializa com dados de exemplo prontos para teste:
+                                - **6 artistas**: Taylor Swift, Coldplay, Beyoncé, Bad Bunny, Anitta, Caetano Veloso
+                                - **5 eventos** com datas, locais e artistas vinculados
+                                - **12 ingressos** com tipos variados (PISTA, VIP, CAMAROTE, CADEIRA, MEIA_ENTRADA)
+                                - **3 usuários** de exemplo
+
+                                ---
+
+                                ## ❌ Códigos de erro
+
+                                | Código | Significado |
+                                |--------|-------------|
+                                | 400 | Dados inválidos ou header obrigatório ausente |
+                                | 401 | X-API-Key ausente, inválida ou revogada |
+                                | 403 | Chave sem permissão para esta operação |
+                                | 404 | Recurso não encontrado |
+                                | 409 | Conflito — recurso já existe |
+                                | 422 | Erro de regra de negócio |
+                                | 429 | Limite de requisições excedido |
+                                | 500 | Erro interno do servidor |
                                 """)
                         .version("2.0.0")
                         .contact(new Contact()
-                                .name("Ticketmaster API Team")
+                                .name("Yasmin Carolina")
                                 .email("contato@ticketmaster-api.com")))
                 .components(new Components()
                         .addSecuritySchemes("X-API-Key",
@@ -67,7 +160,7 @@ public class OpenApiConfig {
             if (isPost) {
                 operation.addParametersItem(new Parameter()
                         .in("header")
-                        .name("X-Idempotency-Key")
+                        .name("Idempotency-Key")
                         .description("UUID único por operação. Previne reprocessamento duplicado. Obrigatório em POST.")
                         .required(true)
                         .schema(new StringSchema().example("550e8400-e29b-41d4-a716-446655440000")));
