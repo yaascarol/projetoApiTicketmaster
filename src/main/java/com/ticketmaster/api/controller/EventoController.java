@@ -109,7 +109,6 @@ public class EventoController {
     })
     @PostMapping
     public ResponseEntity<EntityModel<EventoResponse>> criar(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody EventoRequest req) {
 
         if (idempotencyKey == null || idempotencyKey.isBlank())
