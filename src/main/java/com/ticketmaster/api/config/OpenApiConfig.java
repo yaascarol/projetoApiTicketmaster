@@ -1,5 +1,5 @@
 package com.ticketmaster.api.config;
-
+ 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -13,12 +13,13 @@ import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.HandlerMethod;
-
+ 
 import java.lang.annotation.Annotation;
-
+import java.util.List;
+ 
 @Configuration
 public class OpenApiConfig {
-
+ 
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -26,6 +27,7 @@ public class OpenApiConfig {
                         .title("Ticketmaster API")
                         .description("""
                                 API RESTful para gerenciamento de eventos, artistas, ingressos e pedidos de uma plataforma de venda de ingressos.
+
                                 Esta API utiliza autenticação por chave de acesso no header `X-API-Key`.
 
                                 **Níveis de acesso disponíveis:**
@@ -65,14 +67,31 @@ public class OpenApiConfig {
                                         .description("Chave de autenticação. Gere via POST /api/auth/api-keys.")))
                 .addSecurityItem(new SecurityRequirement().addList("X-API-Key"));
     }
-
+ 
     @Bean
     public OperationCustomizer globalHeadersCustomizer() {
         return (Operation operation, HandlerMethod handlerMethod) -> {
-
-            boolean isPost = hasAnnotation(handlerMethod,
+ 
+            boolean isPost   = hasAnnotation(handlerMethod,
                     org.springframework.web.bind.annotation.PostMapping.class);
-
+            boolean isPut    = hasAnnotation(handlerMethod,
+                    org.springframework.web.bind.annotation.PutMapping.class);
+            boolean isDelete = hasAnnotation(handlerMethod,
+                    org.springframework.web.bind.annotation.DeleteMapping.class);
+ 
+            boolean isWrite = isPost || isPut || isDelete;
+ 
+            // Adiciona X-API-Key como parâmetro explícito em todos os métodos de escrita
+            if (isWrite) {
+                operation.addParametersItem(new Parameter()
+                        .in("header")
+                        .name("X-API-Key")
+                        .description("Chave de autenticação. Nível READ → 403. Sem chave → 401.")
+                        .required(true)
+                        .schema(new StringSchema().example("sua-chave-aqui")));
+            }
+ 
+            // Adiciona Idempotency-Key apenas nos POSTs
             if (isPost) {
                 operation.addParametersItem(new Parameter()
                         .in("header")
@@ -81,7 +100,8 @@ public class OpenApiConfig {
                         .required(true)
                         .schema(new StringSchema().example("550e8400-e29b-41d4-a716-446655440000")));
             }
-
+ 
+            // X-API-Version apenas nos Eventos
             String controller = handlerMethod.getBeanType().getSimpleName();
             if ("EventoController".equals(controller)) {
                 operation.addParametersItem(new Parameter()
@@ -90,14 +110,14 @@ public class OpenApiConfig {
                         .description("v1 = simplificado · v2 = completo com HATEOAS (padrão).")
                         .required(false)
                         .schema(new StringSchema()
-                                ._enum(java.util.List.of("v1", "v2"))
+                                ._enum(List.of("v1", "v2"))
                                 ._default("v2")));
             }
-
+ 
             return operation;
         };
     }
-
+ 
     private boolean hasAnnotation(HandlerMethod hm,
                                    Class<? extends Annotation> annotationType) {
         return hm.getMethod().getAnnotation(annotationType) != null;
