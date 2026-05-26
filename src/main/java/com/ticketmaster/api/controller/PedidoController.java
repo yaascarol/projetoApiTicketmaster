@@ -99,7 +99,6 @@ public class PedidoController {
     })
     @PostMapping
     public ResponseEntity<EntityModel<PedidoResponse>> criar(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody PedidoRequest req) {
 
         if (idempotencyKey == null || idempotencyKey.isBlank())
