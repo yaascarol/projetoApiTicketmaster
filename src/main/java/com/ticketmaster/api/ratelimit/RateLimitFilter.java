@@ -20,12 +20,17 @@ import java.util.Set;
 /**
  * Filtro de rate limiting por IP usando Bucket4j (token bucket algorithm).
  *
- * Limites (por IP):
- *   GET                         → 30 requisições por minuto
- *   POST / PUT / PATCH / DELETE → 10 requisições por minuto
+ * Limites (por IP real do cliente):
+ *   GET                         → 10 requisições por minuto
+ *   POST / PUT / PATCH / DELETE → 5 requisições por minuto
+ *
+ * Resolução de IP (em ordem de prioridade):
+ *   1. CF-Connecting-IP  → IP real quando atrás do Cloudflare/Render
+ *   2. X-Forwarded-For   → IP real quando atrás de outros proxies
+ *   3. RemoteAddr        → IP direto (local/dev)
  *
  * Headers de resposta:
- *   X-Rate-Limit-Remaining           → tokens restantes após a requisição
+ *   X-Rate-Limit-Remaining           → tokens restantes
  *   Retry-After                      → segundos até próximo token (só no 429)
  *   X-Rate-Limit-Retry-After-Seconds → igual ao Retry-After
  */
@@ -45,7 +50,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        // Ignora rotas de infraestrutura — aplica em TODOS os endpoints da API
         return path.startsWith("/swagger-ui")
                 || path.startsWith("/api-docs")
                 || path.startsWith("/v3/api-docs")
@@ -82,16 +86,26 @@ public class RateLimitFilter extends OncePerRequestFilter {
         response.setHeader("X-Rate-Limit-Retry-After-Seconds", String.valueOf(retryAfter));
         response.getWriter().write(String.format(
                 "{\"timestamp\":\"%s\",\"status\":429,\"erro\":\"Too Many Requests\"," +
-                "\"mensagem\":\"Limite de requisições excedido. Tente novamente em %d segundo(s).\"," +
-                "\"path\":\"%s\"}",
+                        "\"mensagem\":\"Limite de requisições excedido. Tente novamente em %d segundo(s).\"," +
+                        "\"path\":\"%s\"}",
                 Instant.now(), retryAfter, request.getRequestURI()));
     }
 
-    /** Resolve IP real mesmo atrás de proxy/load balancer (como o Render). */
+    /**
+     * Resolve o IP real do cliente em ordem de prioridade.
+     * CF-Connecting-IP é o mais confiável quando hospedado no Render + Cloudflare.
+     */
     private String resolveIp(HttpServletRequest request) {
+        // 1. Cloudflare / Render
+        String cf = request.getHeader("CF-Connecting-IP");
+        if (cf != null && !cf.isBlank()) return cf.trim();
+
+        // 2. Proxy genérico
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank())
             return forwarded.split(",")[0].trim();
+
+        // 3. Conexão direta (local)
         return request.getRemoteAddr();
     }
 }
